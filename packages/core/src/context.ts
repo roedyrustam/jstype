@@ -1,4 +1,11 @@
 import { JSTypeRequest } from './request.js';
+import {
+  stream,
+  streamText,
+  streamSSE,
+  type StreamHelper,
+  type SSEStreamHelper,
+} from './streaming/index.js';
 import type { TypedResponse } from './types.js';
 
 export class Context<
@@ -136,5 +143,26 @@ export class Context<
   public error(err: unknown = 'Internal Server Error', status: number = 500): Response {
     const message = err instanceof Error ? err.message : String(err);
     return this.json({ error: message }, status as any);
+  }
+
+  public stream(
+    cb: (stream: StreamHelper) => Promise<void> | void,
+    headers?: HeadersInit
+  ): Response {
+    return stream(this, cb, this.mergeHeaders(headers));
+  }
+
+  public streamText(
+    cb: (stream: StreamHelper) => Promise<void> | void,
+    headers?: HeadersInit
+  ): Response {
+    return streamText(this, cb, this.mergeHeaders(headers));
+  }
+
+  public streamSSE(
+    cb: (stream: SSEStreamHelper) => Promise<void> | void,
+    headers?: HeadersInit
+  ): Response {
+    return streamSSE(this, cb, this.mergeHeaders(headers));
   }
 }

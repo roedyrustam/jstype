@@ -11,6 +11,7 @@
   "dependencies": {
     "@jstype/client": "workspace:*",
     "@jstype/core": "workspace:*",
+    "@jstype/node": "workspace:*",
     "zod": "^4.6.5"
   },
   "devDependencies": {

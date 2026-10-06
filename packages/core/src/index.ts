@@ -1,12 +1,27 @@
 export { JSType } from './app.js';
 export { Context } from './context.js';
 export { JSTypeRequest } from './request.js';
-export { RadixRouter, RadixNode, splitPath } from './router.js';
+export { RadixRouter, RadixNode, splitPath, mergePaths } from './router.js';
 export { compose, matchPath } from './middleware.js';
+
+// Streaming & Server-Sent Events (SSE)
+export {
+  stream,
+  streamText,
+  streamSSE,
+  StreamHelper,
+  SSEStreamHelper,
+  type SSEMessage,
+} from './streaming/index.js';
 
 // Built-in Middleware
 export { cors, type CorsOptions } from './middleware/cors.js';
 export { logger, type LoggerOptions, type LogInfo } from './middleware/logger.js';
+export { secureHeaders, type SecureHeadersOptions } from './middleware/secureHeaders.js';
+export { etag, type ETagOptions } from './middleware/etag.js';
+export { rateLimiter, type RateLimiterOptions } from './middleware/rateLimiter.js';
+export { bearerAuth, type BearerAuthOptions } from './middleware/bearerAuth.js';
+export { basicAuth, type BasicAuthOptions } from './middleware/basicAuth.js';
 
 // Schema Validation
 export {

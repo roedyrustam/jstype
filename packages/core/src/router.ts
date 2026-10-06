@@ -30,6 +30,15 @@ export function splitPath(path: string): string[] {
   return trimmed.split(/\/+/);
 }
 
+export function mergePaths(a: string, b: string): string {
+  const cleanA = a.replace(/\/+$/, '');
+  const cleanB = b.replace(/^\/+/, '');
+  if (!cleanA) return cleanB ? `/${cleanB}` : '/';
+  if (!cleanB) return cleanA.startsWith('/') ? cleanA : `/${cleanA}`;
+  const combined = `${cleanA}/${cleanB}`;
+  return combined.startsWith('/') ? combined : `/${combined}`;
+}
+
 export class RadixRouter<T> {
   public root: RadixNode<T> = new RadixNode<T>();
 

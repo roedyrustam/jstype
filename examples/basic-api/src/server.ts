@@ -1,8 +1,10 @@
 import {
   cors,
   describeRoute,
+  etag,
   JSType,
   logger,
+  secureHeaders,
   validator,
 } from '@jstype/core';
 import { z } from 'zod';
@@ -29,8 +31,10 @@ export const users: User[] = [...initialUsers];
 
 export const app = new JSType();
 
-// 1. Built-in CORS & Logger Middleware
+// 1. Built-in Production Middlewares
+app.use(secureHeaders());
 app.use(cors());
+app.use(etag());
 app.use(logger());
 
 // Global response timing middleware
@@ -57,20 +61,10 @@ app.swaggerUI('/swagger', {
   title: 'JSType API Documentation (Swagger)',
 });
 
-// 3. Application Routes with DescribeRoute & Validation
-export const routes = app
+// 3. Modular Sub-Router: Users Resource
+export const usersApp = new JSType()
   .get(
-    '/health',
-    describeRoute({
-      summary: 'Service health check',
-      tags: ['System'],
-    }),
-    (c) => {
-      return c.text('OK');
-    }
-  )
-  .get(
-    '/api/users',
+    '/',
     describeRoute({
       summary: 'List all users',
       tags: ['Users'],
@@ -80,7 +74,7 @@ export const routes = app
     }
   )
   .get(
-    '/api/users/:id',
+    '/:id',
     describeRoute({
       summary: 'Get user by ID',
       tags: ['Users'],
@@ -95,7 +89,7 @@ export const routes = app
     }
   )
   .post(
-    '/api/users',
+    '/',
     describeRoute({
       summary: 'Create a new user',
       tags: ['Users'],
@@ -113,7 +107,7 @@ export const routes = app
     }
   )
   .delete(
-    '/api/users/:id',
+    '/:id',
     describeRoute({
       summary: 'Delete user by ID',
       tags: ['Users'],
@@ -128,6 +122,36 @@ export const routes = app
       return c.json({ success: true, deleted });
     }
   );
+
+// 4. Mount Sub-Routes and System Endpoints onto Main App
+export const routes = app
+  .get(
+    '/health',
+    describeRoute({
+      summary: 'Service health check',
+      tags: ['System'],
+    }),
+    (c) => {
+      return c.text('OK');
+    }
+  )
+  .get(
+    '/api/events',
+    describeRoute({
+      summary: 'Realtime Server-Sent Events stream',
+      tags: ['Realtime'],
+    }),
+    (c) => {
+      return c.streamSSE(async (stream) => {
+        await stream.writeSSE({
+          event: 'system',
+          data: { status: 'online', timestamp: Date.now() },
+          id: 1,
+        });
+      });
+    }
+  )
+  .route('/api/users', usersApp);
 
 export type AppType = typeof routes;
 export default app;

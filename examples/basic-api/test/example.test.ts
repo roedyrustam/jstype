@@ -84,4 +84,19 @@ describe('Basic API Example End-to-End', () => {
     const html = await res.text();
     expect(html).toContain('swagger-ui');
   });
+
+  it('serves realtime SSE stream at /api/events', async () => {
+    const res = await app.fetch('http://localhost/api/events');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/event-stream');
+    const text = await res.text();
+    expect(text).toContain('event: system');
+    expect(text).toContain('data: {"status":"online"');
+  });
+
+  it('injects secureHeaders on all responses', async () => {
+    const res = await app.fetch('http://localhost/health');
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('x-frame-options')).toBe('SAMEORIGIN');
+  });
 });

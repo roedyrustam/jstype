@@ -71,3 +71,13 @@ export type MiddlewareHandler = (
 ) => Promise<Response | void> | Response | void;
 
 export type RouteMap = Record<string, Record<string, any>>;
+
+export type MergePath<A extends string, B extends string> =
+  B extends '/' ? (A extends '' ? '/' : A) :
+  B extends '' ? (A extends '' ? '/' : A) :
+  A extends '/' ? (B extends '/' ? '/' : B) :
+  `${A extends `${infer ATrim}/` ? ATrim : A}/${B extends `/${infer BTrim}` ? BTrim : B}`;
+
+export type PrefixedRoutes<Prefix extends string, Routes> = {
+  [K in keyof Routes as K extends string ? MergePath<Prefix, K> : never]: Routes[K];
+};

@@ -146,4 +146,30 @@ describe('createClient Proxy RPC', () => {
     expect(directRes.status).toBe(200);
     expect(await directRes.json()).toEqual({ tags: ['typescript'] });
   });
+
+  it('consumes sub-routed APIs with end-to-end type safety', async () => {
+    const postsApp = new JSType()
+      .get('/', (c) => c.json([{ id: 1, title: 'Post 1' }]))
+      .get('/:id', (c) => c.json({ id: Number(c.req.param('id')), title: 'Post Detail' }));
+
+    const mainApp = new JSType().route('/api/posts', postsApp);
+
+    type AppType = typeof mainApp;
+
+    const client = createClient<AppType>('http://localhost:3000', {
+      fetch: mainApp.fetch,
+    });
+
+    // Sub-route list
+    const listRes = await client.api.posts.$get();
+    expect(listRes.status).toBe(200);
+    expect(await listRes.json()).toEqual([{ id: 1, title: 'Post 1' }]);
+
+    // Sub-route detail
+    const detailRes = await client.api.posts[':id'].$get({
+      param: { id: '42' },
+    });
+    expect(detailRes.status).toBe(200);
+    expect(await detailRes.json()).toEqual({ id: 42, title: 'Post Detail' });
+  });
 });

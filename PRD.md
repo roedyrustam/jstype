@@ -46,17 +46,17 @@
 ## 5. Feature Requirements
 
 ### MVP Features (Must Have — v1.0)
-- [ ] **Universal Request / Response Context (`@jstype/core`)**: Abstraksi context `c` yang membungkus native standard `Request` dan menghasilkan standard `Response` (`c.json()`, `c.text()`, `c.html()`, `c.req.param()`, `c.req.query()`).
-- [ ] **Ultra-Fast Radix Router**: Pencocokan rute berkecepatan tinggi dengan parameter dinamis (`/users/:id`), wildcards (`/static/*`), dan method filtering (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`).
-- [ ] **Middleware Chain Engine**: Dukungan middleware asinkron bergaya Koa/Hono (`await next()`) dengan typed variables context (`c.var`).
-- [ ] **Zero-overhead Typed RPC Client (`@jstype/client`)**: Proxy-based client yang membaca skema tipe generic rute `JSType<Routes>` dan menyediakan fungsi HTTP yang aman secara tipe (`$get`, `$post`, `$put`, `$delete`).
-- [ ] **Multi-Runtime Adapters**: Adapter resmi untuk Node.js HTTP (`@jstype/node`), native Bun export (`fetch: app.fetch`), dan edge workers.
+- [x] **Universal Request / Response Context (`@jstype/core`)**: Abstraksi context `c` yang membungkus native standard `Request` dan menghasilkan standard `Response` (`c.json()`, `c.text()`, `c.html()`, `c.redirect()`, `c.header()`, `c.req.param()`, `c.req.query()`).
+- [x] **Ultra-Fast Radix Router**: Pencocokan rute berkecepatan tinggi dengan parameter dinamis (`/users/:id`), wildcards (`/static/*`), sub-routing (`app.route()`), dan method filtering (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`).
+- [x] **Middleware Chain Engine**: Dukungan middleware asinkron bergaya Koa/Hono (`await next()`) dengan typed variables context (`c.var`).
+- [x] **Zero-overhead Typed RPC Client (`@jstype/client`)**: Proxy-based client yang membaca skema tipe generic rute `JSType<Routes>` dan menyediakan fungsi HTTP yang aman secara tipe (`$get`, `$post`, `$put`, `$delete`).
+- [x] **Multi-Runtime Adapters**: Adapter resmi untuk Node.js HTTP (`@jstype/node`), native Bun export (`fetch: app.fetch`), dan edge workers.
 
 ### Phase 2 Features (Should Have — v1.x)
 - [x] **Schema Validation Adapters**: Integrasi first-class dengan Standard Schema v1, Zod, TypeBox, dan Valibot untuk validasi payload runtime dan inferensi skema otomatis.
 - [x] **Auto OpenAPI 3.1 & Scalar Docs**: Endpoint otomatis untuk menghasilkan spesifikasi OpenAPI 3.1 dan dokumentasi interaktif (Scalar & Swagger UI) tanpa overhead manual.
-- [x] **Built-in Standard Middleware**: Middleware bawaan `cors()` dan `logger()` siap pakai dengan performa tinggi.
-- [ ] **Server-Sent Events (SSE) & WebSocket Handler**: Helper streaming respon waktu-nyata type-safe.
+- [x] **Built-in Standard Middleware**: Middleware bawaan `cors()`, `logger()`, `secureHeaders()`, `etag()`, `rateLimiter()`, `bearerAuth()`, `basicAuth()`.
+- [x] **Server-Sent Events (SSE) & Stream Handlers**: Helper streaming respon waktu-nyata type-safe (`c.streamSSE()`, `c.streamText()`, `stream()`).
 
 ### Future Features (Nice to Have — v2.0+)
 - [ ] **File-based Routing Meta-Engine**: Opsi routing berbasis direktori file untuk arsitektur fullstack app.

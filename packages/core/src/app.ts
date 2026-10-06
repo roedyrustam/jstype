@@ -5,13 +5,14 @@ import { scalarDocs, type ScalarDocsOptions } from './openapi/scalar.js';
 import { swaggerUI, type SwaggerUIOptions } from './openapi/swagger.js';
 import type { OpenAPIInfo, OpenAPISpec, RouteMetadata } from './openapi/types.js';
 import { JSTypeRequest } from './request.js';
-import { RadixRouter } from './router.js';
+import { RadixRouter, mergePaths } from './router.js';
 import type {
   ClientRequestOptions,
   ExtractParams,
   HTTPMethod,
   InferData,
   MiddlewareHandler,
+  PrefixedRoutes,
   RouteHandler,
   TypedClientResponse,
 } from './types.js';
@@ -22,9 +23,16 @@ interface RegisteredMiddleware {
   handler: MiddlewareHandler;
 }
 
+interface RawRouteRecord {
+  method: HTTPMethod;
+  path: string;
+  handlers: any[];
+}
+
 export class JSType<TRoutes extends Record<string, any> = {}> {
   public readonly router: RadixRouter<RouteHandler> = new RadixRouter<RouteHandler>();
   private readonly middlewares: RegisteredMiddleware[] = [];
+  private readonly _rawRoutes: RawRouteRecord[] = [];
   private readonly _registeredRoutes: RegisteredRouteInfo[] = [];
   private _customNotFound?: (c: Context) => Response | Promise<Response>;
   private _customOnError?: (err: unknown, c: Context) => Response | Promise<Response>;
@@ -82,6 +90,8 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
       validators,
     });
 
+    this._rawRoutes.push({ method, path, handlers });
+
     if (routeMiddlewares.length > 0) {
       const composed: RouteHandler = (c: Context<any>) => {
         const runner = compose(routeMiddlewares, mainHandler);
@@ -91,6 +101,25 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
     } else {
       this.router.insert(method, path, mainHandler);
     }
+  }
+
+  public route<SubRoutes extends Record<string, any>, Prefix extends string>(
+    prefix: Prefix,
+    subApp: JSType<SubRoutes>
+  ): JSType<TRoutes & PrefixedRoutes<Prefix, SubRoutes>> {
+    // 1. Merge subApp middlewares
+    for (const mw of (subApp as any).middlewares) {
+      const mergedPath = mw.path ? mergePaths(prefix, mw.path) : prefix;
+      this.middlewares.push({ path: mergedPath, handler: mw.handler });
+    }
+
+    // 2. Merge subApp routes
+    for (const route of (subApp as any)._rawRoutes) {
+      const mergedPath = mergePaths(prefix, route.path);
+      this.addRoute(route.method, mergedPath, route.handlers);
+    }
+
+    return this as unknown as JSType<TRoutes & PrefixedRoutes<Prefix, SubRoutes>>;
   }
 
   public getRegisteredRoutes(): RegisteredRouteInfo[] {
