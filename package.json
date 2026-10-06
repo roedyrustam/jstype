@@ -1,0 +1,20 @@
+{
+  "name": "jstype-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Modern TypeScript web framework with end-to-end type safety and universal Web Standards",
+  "packageManager": "pnpm@11.21.0",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "dev": "pnpm -r run dev",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsup": "^8.3.6",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
+  }
+}
