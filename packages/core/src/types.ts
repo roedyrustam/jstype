@@ -57,8 +57,12 @@ export interface ClientRequestOptions<
 
 export type Next = () => Promise<Response | void>;
 
-export type RouteHandler<P extends string = string, R = any> = (
-  c: Context<P>
+export type RouteHandler<
+  P extends string = string,
+  V extends Record<string, any> = Record<string, any>,
+  R = any
+> = (
+  c: Context<P, V>
 ) => R | Promise<R>;
 
 export type MiddlewareHandler = (

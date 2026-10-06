@@ -1,8 +1,11 @@
 import { JSTypeRequest } from './request.js';
 import type { TypedResponse } from './types.js';
 
-export class Context<P extends string = string> {
-  public readonly req: JSTypeRequest<P>;
+export class Context<
+  P extends string = string,
+  V extends Record<string, any> = Record<string, any>
+> {
+  public readonly req: JSTypeRequest<P, V>;
   public readonly env: Record<string, unknown>;
   public readonly var: Record<string, any>;
   public res?: Response;
@@ -11,7 +14,7 @@ export class Context<P extends string = string> {
   private _status?: number;
 
   constructor(
-    req: JSTypeRequest<P>,
+    req: JSTypeRequest<P, V>,
     env: Record<string, unknown> = {},
     initialVar: Record<string, any> = {}
   ) {

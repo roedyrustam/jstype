@@ -17,6 +17,7 @@ export function matchPath(pattern: string, path: string): boolean {
 
 function toResponse(res: unknown, context: Context): Response {
   if (res instanceof Response) {
+    context.res = res;
     return res;
   }
   if (typeof res === 'string') {
@@ -58,14 +59,18 @@ export function compose(
       }
 
       const fn = middlewares[i];
+      let nextRes: Response | undefined;
       try {
         return Promise.resolve(
-          fn(context, () => dispatch(i + 1))
+          fn(context, async () => {
+            nextRes = await dispatch(i + 1);
+            return nextRes;
+          })
         ).then((res) => {
           if (res !== undefined) {
             return toResponse(res, context);
           }
-          return context.res ?? context.notFound();
+          return nextRes ?? context.res ?? context.notFound();
         });
       } catch (err) {
         return Promise.reject(err);

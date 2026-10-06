@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { app } from '../src/server.js';
 import { client } from '../src/client.js';
 
 describe('Basic API Example End-to-End', () => {
-  it('correctly executes full CRUD cycle with typed client', async () => {
+  it('correctly executes full CRUD cycle with typed client and Zod validation', async () => {
     // 1. Health check
     const healthRes = await client.health.$get();
     expect(healthRes.status).toBe(200);
@@ -14,7 +15,7 @@ describe('Basic API Example End-to-End', () => {
     const users = await usersRes.json();
     expect(users.length).toBeGreaterThanOrEqual(2);
 
-    // 3. Create user
+    // 3. Create user (valid payload)
     const createRes = await client.api.users.$post({
       json: { name: 'E2E User', role: 'user' },
     });
@@ -38,7 +39,49 @@ describe('Basic API Example End-to-End', () => {
     const deleteResult = (await deleteRes.json()) as any;
     expect(deleteResult.success).toBe(true);
 
-    // 6. Verify middleware header
+    // 6. Verify middleware headers (CORS and Response-Time)
     expect(deleteRes.headers.get('x-response-time')).toBeDefined();
+    expect(deleteRes.headers.get('access-control-allow-origin')).toBe('*');
+  });
+
+  it('rejects invalid payload on POST /api/users with 400 Bad Request', async () => {
+    const invalidRes = await app.fetch('http://localhost/api/users', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'A', role: 'superadmin' }), // name < 2 chars, invalid enum role
+    });
+
+    expect(invalidRes.status).toBe(400);
+    const body = (await invalidRes.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.target).toBe('json');
+    expect(body.issues).toBeDefined();
+    expect(body.issues.length).toBeGreaterThan(0);
+  });
+
+  it('serves auto-generated OpenAPI 3.1.0 spec at /openapi.json', async () => {
+    const res = await app.fetch('http://localhost/openapi.json');
+    expect(res.status).toBe(200);
+    const spec = (await res.json()) as any;
+    expect(spec.openapi).toBe('3.1.0');
+    expect(spec.info.title).toBe('JSType Basic API');
+    expect(spec.paths['/api/users'].post.requestBody.content['application/json'].schema.properties.name).toBeDefined();
+  });
+
+  it('serves interactive Scalar documentation at /docs', async () => {
+    const res = await app.fetch('http://localhost/docs');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('Scalar');
+    expect(html).toContain('@scalar/api-reference');
+  });
+
+  it('serves interactive Swagger UI documentation at /swagger', async () => {
+    const res = await app.fetch('http://localhost/swagger');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('swagger-ui');
   });
 });

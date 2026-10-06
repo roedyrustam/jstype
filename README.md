@@ -31,6 +31,9 @@ Framework ini dirancang untuk kompatibilitas universal lintas runtime modern (**
 - 🌐 **Universal Web Standards**: Beroperasi di mana saja Fetch API tersedia — Node.js, Bun, Deno, Edge runtimes.
 - 🚀 **Ultra-Fast Radix Router**: Pencocokan rute $O(k)$ berkecepatan tinggi dengan parameter dinamis (`:param`) dan wildcards (`*`).
 - 🔒 **End-to-End Type Safety**: Autocomplete rute, HTTP methods, route params, query string, dan payload JSON secara otomatis di sisi client.
+- 🛡️ **Schema Validation Adapter**: Validasi runtime first-class dengan dukungan Standard Schema v1 (`~standard`), Zod, TypeBox, dan Valibot via `validator('json' | 'query' | 'param' | 'header', schema)`.
+- 📖 **OpenAPI 3.1 & Interactive Docs**: Auto-generate spesifikasi OpenAPI 3.1 dan dokumentasi interaktif dengan UI modern (**Scalar** & **Swagger UI**) via `app.doc()`, `scalarDocs()`, dan `describeRoute()`.
+- ⚡ **Built-in Standard Middleware**: Middleware utilitas standar siap pakai: `cors()` (origin detection, credentials, preflight OPTIONS) dan `logger()` (latency, method, status).
 - 📦 **Zero-Overhead Typed RPC Client (`@jstype/client`)**: Proxy-based client tanpa build/codegen step terpisah. Cukup ekspor `type AppType = typeof app`.
 - 🧩 **Ergonomic Middleware Stack**: Mendukung middleware asinkron (`await next()`), typed context variables (`c.var`), dan header injection.
 - 🛡️ **Zero Runtime Dependencies**: Package `@jstype/core` dan `@jstype/client` sangat ringan dan mengandalkan native web primitives.
@@ -42,33 +45,41 @@ Framework ini dirancang untuk kompatibilitas universal lintas runtime modern (**
 ### 1. Definisi Server (`server.ts`)
 
 ```ts
-import { JSType } from '@jstype/core';
+import { JSType, cors, logger, validator, describeRoute } from '@jstype/core';
+import { z } from 'zod';
 
 const app = new JSType();
 
-// Middleware
-app.use(async (c, next) => {
-  const start = Date.now();
-  await next();
-  c.header('X-Response-Time', `${Date.now() - start}ms`);
+// Built-in Middleware
+app.use(cors());
+app.use(logger());
+
+// OpenAPI 3.1 & Interactive Scalar Docs
+app.doc('/openapi.json', { title: 'My API', version: '1.0.0' });
+app.scalarDocs('/docs', { specUrl: '/openapi.json', title: 'Interactive Docs' });
+
+// Zod Schema
+const createUserSchema = z.object({
+  name: z.string().min(2),
+  role: z.enum(['admin', 'user']),
 });
 
-// Routes
+// Routes with Validation & Metadata
 const routes = app
-  .get('/api/users', (c) => {
-    return c.json([
-      { id: '1', name: 'Alice', role: 'admin' },
-      { id: '2', name: 'Bob', role: 'user' },
-    ]);
-  })
-  .get('/api/users/:id', (c) => {
-    const id = c.req.param('id');
-    return c.json({ id, name: 'Alice', role: 'admin' });
-  })
-  .post('/api/users', async (c) => {
-    const body = await c.req.json<{ name: string; role: string }>();
-    return c.json({ id: '3', ...body }, 201);
-  });
+  .get(
+    '/api/users',
+    describeRoute({ summary: 'List all users', tags: ['Users'] }),
+    (c) => c.json([{ id: '1', name: 'Alice', role: 'admin' }])
+  )
+  .post(
+    '/api/users',
+    describeRoute({ summary: 'Create user', tags: ['Users'] }),
+    validator('json', createUserSchema),
+    (c) => {
+      const user = c.req.valid('json'); // 100% Type-Safe derived from Zod!
+      return c.json({ id: '2', ...user }, 201);
+    }
+  );
 
 export type AppType = typeof routes;
 export default app;

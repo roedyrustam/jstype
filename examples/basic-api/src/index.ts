@@ -13,12 +13,12 @@ async function main() {
   const users = await usersRes.json();
   console.log('2. GET /api/users:', usersRes.status, users);
 
-  // 3. Create a new user
+  // 3. Create a new user with Zod schema validation
   const createRes = await client.api.users.$post({
     json: { name: 'Charlie', role: 'admin' },
   });
   const createdUser = await createRes.json();
-  console.log('3. POST /api/users:', createRes.status, createdUser);
+  console.log('3. POST /api/users (Zod Validated):', createRes.status, createdUser);
 
   // 4. Fetch the newly created user by ID
   const singleRes = await client.api.users[':id'].$get({
@@ -34,10 +34,14 @@ async function main() {
   const deleteResult = await deleteRes.json();
   console.log(`5. DELETE /api/users/${createdUser.id}:`, deleteRes.status, deleteResult);
 
-  // 6. Check response headers injected by middleware
-  console.log('6. X-Response-Time header:', deleteRes.headers.get('X-Response-Time'));
+  // 6. Check response headers injected by middleware (CORS & Timing)
+  console.log('6. Access-Control-Allow-Origin header:', deleteRes.headers.get('Access-Control-Allow-Origin'));
+  console.log('   X-Response-Time header:', deleteRes.headers.get('X-Response-Time'));
 
-  console.log('\n✅ Demo completed successfully with 100% End-to-End Type Safety!');
+  console.log('\n📖 OpenAPI 3.1 Spec available at: /openapi.json');
+  console.log('📚 Interactive Scalar Docs available at: /docs');
+  console.log('🔍 Interactive Swagger UI available at: /swagger');
+  console.log('\n✅ Demo completed successfully with 100% End-to-End Type Safety & Schema Validation!');
 }
 
 main().catch((err) => {

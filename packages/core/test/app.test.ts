@@ -202,5 +202,25 @@ describe('JSType App and Middlewares', () => {
     const res = await app.fetch('http://localhost/header-test');
     expect(res.headers.get('x-after-next')).toBe('injected');
   });
+
+  it('correctly handles raw Response returned by handler when middleware returns void', async () => {
+    const app = new JSType();
+
+    app.use(async (_c, next) => {
+      await next();
+      // Returns void / undefined
+    });
+
+    app.get('/raw-response', () => {
+      return new Response('raw response body', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    });
+
+    const res = await app.fetch('http://localhost/raw-response');
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('raw response body');
+  });
 });
 

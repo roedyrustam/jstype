@@ -4,7 +4,7 @@ export function createClient<T = any>(
   baseUrl: string = '',
   clientOptions: ClientOptions = {}
 ): ClientProxy<T> {
-  const customFetch = clientOptions.fetch ?? globalThis.fetch;
+  const customFetch = clientOptions.fetch ?? globalThis.fetch.bind(globalThis);
   const baseHeaders = clientOptions.headers;
 
   const cleanBase = baseUrl.replace(/\/+$/, '');

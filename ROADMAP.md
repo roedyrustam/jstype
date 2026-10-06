@@ -28,3 +28,14 @@
 - [x] **Fase 8: Hardening, Dokumentasi & Kesiapan Publikasi**
   - [x] Verifikasi build dual format (ESM/CJS) dan file `.d.ts` / `.d.cts`.
   - [x] Pembuatan README komprehensif, quickstart guide, dan logo identity.
+- [x] **Fase 9: Built-in Middleware & Schema Validation Engine (`@jstype/core`)**
+  - [x] Built-in `cors(options)` middleware dengan origin detection dinamis, credentials, custom headers, dan preflight OPTIONS (204).
+  - [x] Built-in `logger(options)` middleware dengan logging method, path, status, and precise latency duration.
+  - [x] `validator(target, schema, hook?)` middleware dengan dukungan Standard Schema v1 (`~standard`), Zod, TypeBox, dan Valibot.
+  - [x] Validasi runtime otomatis dengan error response 400 Bad Request dan typed access via `c.req.valid(target)`.
+- [x] **Fase 10: Auto OpenAPI 3.1 & Interactive Documentation (Scalar & Swagger)**
+  - [x] Registry route metadata via `describeRoute()`.
+  - [x] Zero-dependency Schema-to-JSON-Schema converter untuk OpenAPI 3.1.
+  - [x] Helper `app.doc('/openapi.json')` dan `app.getOpenAPISpec()`.
+  - [x] Interactive UI handlers: `scalarDocs('/docs')` (Scalar API reference) & `swaggerUI('/swagger')`.
+  - [x] Suite pengujian komprehensif untuk CORS, Logger, Validator, dan OpenAPI generator (100% test pass).

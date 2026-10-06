@@ -1,16 +1,34 @@
 import type { ExtractParams } from './types.js';
 
-export class JSTypeRequest<P extends string = string> {
+export class JSTypeRequest<
+  P extends string = string,
+  V extends Record<string, any> = Record<string, any>
+> {
   public readonly raw: Request;
   public params: Record<string, string>;
   private _urlObj?: URL;
   private _queryCache?: Record<string, string>;
   private _bodyText?: string;
   private _bodyJson?: unknown;
+  private _validated: Record<string, any> = {};
 
   constructor(raw: Request, params: Record<string, string> = {}) {
     this.raw = raw;
     this.params = params;
+  }
+
+  public setValid(target: string, value: any): void {
+    this._validated[target] = value;
+  }
+
+  public valid<T extends keyof V>(target: T): V[T];
+  public valid<T = unknown>(target: string): T;
+  public valid(): V;
+  public valid(target?: string): any {
+    if (!target) {
+      return { ...this._validated };
+    }
+    return this._validated[target];
   }
 
   public get url(): string {
@@ -96,6 +114,10 @@ export class JSTypeRequest<P extends string = string> {
       return this._bodyJson as T;
     }
     const txt = await this.text();
+    if (!txt || txt.trim() === '') {
+      this._bodyJson = undefined;
+      return undefined as T;
+    }
     this._bodyJson = JSON.parse(txt);
     return this._bodyJson as T;
   }

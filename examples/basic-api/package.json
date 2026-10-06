@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@jstype/client": "workspace:*",
-    "@jstype/core": "workspace:*"
+    "@jstype/core": "workspace:*",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "tsx": "^4.19.3",

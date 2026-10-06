@@ -53,8 +53,9 @@
 - [ ] **Multi-Runtime Adapters**: Adapter resmi untuk Node.js HTTP (`@jstype/node`), native Bun export (`fetch: app.fetch`), dan edge workers.
 
 ### Phase 2 Features (Should Have — v1.x)
-- [ ] **Schema Validation Adapters**: Integrasi first-class dengan Zod, TypeBox, dan Valibot untuk validasi payload runtime dan inferensi skema otomatis.
-- [ ] **Auto OpenAPI 3.1 & Scalar Docs**: Endpoint otomatis untuk menghasilkan spesifikasi OpenAPI dan dokumentasi interaktif tanpa overhead manual.
+- [x] **Schema Validation Adapters**: Integrasi first-class dengan Standard Schema v1, Zod, TypeBox, dan Valibot untuk validasi payload runtime dan inferensi skema otomatis.
+- [x] **Auto OpenAPI 3.1 & Scalar Docs**: Endpoint otomatis untuk menghasilkan spesifikasi OpenAPI 3.1 dan dokumentasi interaktif (Scalar & Swagger UI) tanpa overhead manual.
+- [x] **Built-in Standard Middleware**: Middleware bawaan `cors()` dan `logger()` siap pakai dengan performa tinggi.
 - [ ] **Server-Sent Events (SSE) & WebSocket Handler**: Helper streaming respon waktu-nyata type-safe.
 
 ### Future Features (Nice to Have — v2.0+)

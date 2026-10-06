@@ -1,5 +1,9 @@
 import { Context } from './context.js';
 import { compose, matchPath } from './middleware.js';
+import { generateOpenAPISpec, type RegisteredRouteInfo } from './openapi/generator.js';
+import { scalarDocs, type ScalarDocsOptions } from './openapi/scalar.js';
+import { swaggerUI, type SwaggerUIOptions } from './openapi/swagger.js';
+import type { OpenAPIInfo, OpenAPISpec, RouteMetadata } from './openapi/types.js';
 import { JSTypeRequest } from './request.js';
 import { RadixRouter } from './router.js';
 import type {
@@ -11,6 +15,7 @@ import type {
   RouteHandler,
   TypedClientResponse,
 } from './types.js';
+import type { ValidationTarget, ValidatorMiddleware } from './validator/types.js';
 
 interface RegisteredMiddleware {
   path?: string;
@@ -20,6 +25,7 @@ interface RegisteredMiddleware {
 export class JSType<TRoutes extends Record<string, any> = {}> {
   public readonly router: RadixRouter<RouteHandler> = new RadixRouter<RouteHandler>();
   private readonly middlewares: RegisteredMiddleware[] = [];
+  private readonly _registeredRoutes: RegisteredRouteInfo[] = [];
   private _customNotFound?: (c: Context) => Response | Promise<Response>;
   private _customOnError?: (err: unknown, c: Context) => Response | Promise<Response>;
 
@@ -54,6 +60,28 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
     const mainHandler = handlers[handlers.length - 1];
     const routeMiddlewares = handlers.slice(0, -1);
 
+    // Extract metadata and validators for OpenAPI registration
+    let routeMetadata: RouteMetadata | undefined;
+    const validators: Array<{ target: ValidationTarget; schema: any }> = [];
+
+    for (const h of handlers) {
+      if (h && (typeof h === 'object' || typeof h === 'function')) {
+        if ('_routeMetadata' in h && h._routeMetadata) {
+          routeMetadata = { ...routeMetadata, ...h._routeMetadata };
+        }
+        if ('_target' in h && 'schema' in h) {
+          validators.push({ target: h._target, schema: h.schema });
+        }
+      }
+    }
+
+    this._registeredRoutes.push({
+      method,
+      path,
+      metadata: routeMetadata,
+      validators,
+    });
+
     if (routeMiddlewares.length > 0) {
       const composed: RouteHandler = (c: Context<any>) => {
         const runner = compose(routeMiddlewares, mainHandler);
@@ -65,6 +93,180 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
     }
   }
 
+  public getRegisteredRoutes(): RegisteredRouteInfo[] {
+    return [...this._registeredRoutes];
+  }
+
+  public getOpenAPISpec(
+    specInfo?: Partial<OpenAPIInfo> & {
+      servers?: OpenAPISpec['servers'];
+      tags?: OpenAPISpec['tags'];
+      components?: OpenAPISpec['components'];
+      security?: OpenAPISpec['security'];
+    }
+  ): OpenAPISpec {
+    return generateOpenAPISpec(this._registeredRoutes, specInfo);
+  }
+
+  public doc(
+    path: string,
+    specInfo?: Partial<OpenAPIInfo> & {
+      servers?: OpenAPISpec['servers'];
+      tags?: OpenAPISpec['tags'];
+      components?: OpenAPISpec['components'];
+      security?: OpenAPISpec['security'];
+    }
+  ): this {
+    this.get(path, (c) => {
+      const spec = this.getOpenAPISpec(specInfo);
+      return c.json(spec);
+    });
+    return this;
+  }
+
+  public scalarDocs(path: string, options?: ScalarDocsOptions): this {
+    const handler = scalarDocs(path, options);
+    this.get(path, handler);
+    return this;
+  }
+
+  public swaggerUI(path: string, options?: SwaggerUIOptions): this {
+    const handler = swaggerUI(path, options);
+    this.get(path, handler);
+    return this;
+  }
+
+  // GET Overloads
+  public get<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $get: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public get<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $get: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public get<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $get: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public get<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $get: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public get<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $get: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public get<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $get: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
   public get<Path extends string, R>(
     path: Path,
     ...handlers: [...MiddlewareHandler[], (c: Context<Path>) => R]
@@ -76,11 +278,143 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
         ) => Promise<TypedClientResponse<InferData<R>>>;
       };
     }
-  > {
+  >;
+  public get(path: string, ...handlers: any[]): any {
     this.addRoute('GET', path, handlers);
-    return this as any;
+    return this;
   }
 
+  // POST Overloads
+  public post<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $post: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public post<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $post: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public post<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $post: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public post<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $post: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public post<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $post: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public post<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $post: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
   public post<Path extends string, R>(
     path: Path,
     ...handlers: [...MiddlewareHandler[], (c: Context<Path>) => R]
@@ -92,11 +426,143 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
         ) => Promise<TypedClientResponse<InferData<R>>>;
       };
     }
-  > {
+  >;
+  public post(path: string, ...handlers: any[]): any {
     this.addRoute('POST', path, handlers);
-    return this as any;
+    return this;
   }
 
+  // PUT Overloads
+  public put<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $put: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public put<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $put: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public put<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $put: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public put<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $put: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public put<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $put: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public put<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $put: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
   public put<Path extends string, R>(
     path: Path,
     ...handlers: [...MiddlewareHandler[], (c: Context<Path>) => R]
@@ -108,11 +574,143 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
         ) => Promise<TypedClientResponse<InferData<R>>>;
       };
     }
-  > {
+  >;
+  public put(path: string, ...handlers: any[]): any {
     this.addRoute('PUT', path, handlers);
-    return this as any;
+    return this;
   }
 
+  // DELETE Overloads
+  public delete<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $delete: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public delete<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $delete: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public delete<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $delete: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public delete<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $delete: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public delete<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $delete: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public delete<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $delete: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
   public delete<Path extends string, R>(
     path: Path,
     ...handlers: [...MiddlewareHandler[], (c: Context<Path>) => R]
@@ -124,11 +722,143 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
         ) => Promise<TypedClientResponse<InferData<R>>>;
       };
     }
-  > {
+  >;
+  public delete(path: string, ...handlers: any[]): any {
     this.addRoute('DELETE', path, handlers);
-    return this as any;
+    return this;
   }
 
+  // PATCH Overloads
+  public patch<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $patch: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public patch<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $patch: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public patch<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $patch: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public patch<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    mw: MiddlewareHandler,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $patch: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public patch<Path extends string, T1 extends ValidationTarget, O1, R>(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $patch: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
+  public patch<
+    Path extends string,
+    T1 extends ValidationTarget,
+    O1,
+    T2 extends ValidationTarget,
+    O2,
+    R
+  >(
+    path: Path,
+    v1: ValidatorMiddleware<T1, O1>,
+    v2: ValidatorMiddleware<T2, O2>,
+    mw: MiddlewareHandler,
+    handler: (c: Context<Path, { [K in T1]: O1 } & { [K in T2]: O2 }>) => R
+  ): JSType<
+    TRoutes & {
+      [P in Path]: {
+        $patch: (
+          options?: ClientRequestOptions<
+            ExtractParams<P>,
+            'query' extends T1 ? O1 : 'query' extends T2 ? O2 : Record<string, string | number | boolean>,
+            'json' extends T1 ? O1 : 'json' extends T2 ? O2 : any
+          >
+        ) => Promise<TypedClientResponse<InferData<R>>>;
+      };
+    }
+  >;
   public patch<Path extends string, R>(
     path: Path,
     ...handlers: [...MiddlewareHandler[], (c: Context<Path>) => R]
@@ -140,11 +870,13 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
         ) => Promise<TypedClientResponse<InferData<R>>>;
       };
     }
-  > {
+  >;
+  public patch(path: string, ...handlers: any[]): any {
     this.addRoute('PATCH', path, handlers);
-    return this as any;
+    return this;
   }
 
+  // ALL Overloads
   public all<Path extends string, R>(
     path: Path,
     ...handlers: [...MiddlewareHandler[], (c: Context<Path>) => R]
@@ -156,9 +888,10 @@ export class JSType<TRoutes extends Record<string, any> = {}> {
         ) => Promise<TypedClientResponse<InferData<R>>>;
       };
     }
-  > {
+  >;
+  public all(path: string, ...handlers: any[]): any {
     this.addRoute('ALL', path, handlers);
-    return this as any;
+    return this;
   }
 
   public fetch = async (
