@@ -1,4 +1,4 @@
-# @jstype/core
+# jstype-core
 
 > Ultra-Fast Web Standards Web Framework with End-to-End Type Safety, Radix Router, Schema Validation & Auto OpenAPI 3.1.
 
@@ -7,17 +7,17 @@ Part of the [jstype](https://github.com/roedyrustam/jstype) web framework.
 ## Installation
 
 ```bash
-npm install @jstype/core
+npm install jstype-core
 # or
-pnpm add @jstype/core
+pnpm add jstype-core
 # or
-bun add @jstype/core
+bun add jstype-core
 ```
 
 ## Quickstart
 
 ```ts
-import { JSType, cors, secureHeaders, etag, logger, validator, describeRoute } from '@jstype/core';
+import { JSType, cors, secureHeaders, etag, logger, validator, describeRoute } from 'jstype-core';
 import { z } from 'zod';
 
 const app = new JSType();

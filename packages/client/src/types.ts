@@ -1,4 +1,4 @@
-import type { ClientRequestOptions, TypedClientResponse } from '@jstype/core';
+import type { ClientRequestOptions, TypedClientResponse } from 'jstype-core';
 
 export type CleanPath<P extends string> = P extends `/${infer Rest}` ? CleanPath<Rest> : P;
 

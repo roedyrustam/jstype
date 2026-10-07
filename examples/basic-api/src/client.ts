@@ -1,4 +1,4 @@
-import { createClient } from '@jstype/client';
+import { createClient } from 'jstype-client';
 import { app, type AppType } from './server.js';
 
 // Create a typed client bound in-memory directly to app.fetch for zero-latency testing

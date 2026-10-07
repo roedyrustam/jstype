@@ -6,7 +6,7 @@ import {
   logger,
   secureHeaders,
   validator,
-} from '@jstype/core';
+} from 'jstype-core';
 import { z } from 'zod';
 
 export interface User {

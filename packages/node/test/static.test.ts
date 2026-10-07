@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { JSType } from '@jstype/core';
+import { JSType } from 'jstype-core';
 import { serveStatic } from '../src/static.js';
 import fs from 'node:fs';
 import path from 'node:path';

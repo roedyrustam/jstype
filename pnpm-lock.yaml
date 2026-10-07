@@ -26,13 +26,13 @@ importers:
 
   examples/basic-api:
     dependencies:
-      '@jstype/client':
+      jstype-client:
         specifier: workspace:*
         version: link:../../packages/client
-      '@jstype/core':
+      jstype-core:
         specifier: workspace:*
         version: link:../../packages/core
-      '@jstype/node':
+      jstype-node:
         specifier: workspace:*
         version: link:../../packages/node
       zod:
@@ -51,7 +51,7 @@ importers:
 
   packages/client:
     devDependencies:
-      '@jstype/core':
+      jstype-core:
         specifier: workspace:*
         version: link:../core
       tsup:
@@ -81,7 +81,7 @@ importers:
 
   packages/node:
     dependencies:
-      '@jstype/core':
+      jstype-core:
         specifier: workspace:*
         version: link:../core
     devDependencies:

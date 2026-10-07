@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JSType } from '@jstype/core';
+import { JSType } from 'jstype-core';
 import { serve, getRequestListener } from '../src/index.js';
 import http from 'node:http';
 

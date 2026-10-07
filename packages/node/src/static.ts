@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
-import type { Context, MiddlewareHandler } from '@jstype/core';
+import type { Context, MiddlewareHandler } from 'jstype-core';
 
 export interface ServeStaticOptions {
   /** Root directory to serve files from */

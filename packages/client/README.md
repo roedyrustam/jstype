@@ -1,4 +1,4 @@
-# @jstype/client
+# jstype-client
 
 > Zero-Overhead Typed RPC Client for [jstype](https://github.com/roedyrustam/jstype).
 
@@ -7,17 +7,17 @@ Provides instant end-to-end type safety, autocompletion on paths, parameters, qu
 ## Installation
 
 ```bash
-npm install @jstype/client
+npm install jstype-client
 # or
-pnpm add @jstype/client
+pnpm add jstype-client
 # or
-bun add @jstype/client
+bun add jstype-client
 ```
 
 ## Usage
 
 ```ts
-import { createClient } from '@jstype/client';
+import { createClient } from 'jstype-client';
 import type { AppType } from './server'; // Exported from backend
 
 const client = createClient<AppType>('http://localhost:3000');

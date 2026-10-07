@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { JSType } from '@jstype/core';
+import { JSType } from 'jstype-core';
 import { createClient } from '../src/client.js';
 
 describe('createClient Proxy RPC', () => {

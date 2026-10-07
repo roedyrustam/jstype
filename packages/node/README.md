@@ -1,22 +1,22 @@
-# @jstype/node
+# jstype-node
 
 > Official Node.js HTTP Server Adapter & Static File Middleware for [jstype](https://github.com/roedyrustam/jstype).
 
 ## Installation
 
 ```bash
-npm install @jstype/node @jstype/core
+npm install jstype-node jstype-core
 # or
-pnpm add @jstype/node @jstype/core
+pnpm add jstype-node jstype-core
 # or
-bun add @jstype/node @jstype/core
+bun add jstype-node jstype-core
 ```
 
 ## Usage
 
 ```ts
-import { serve, serveStatic } from '@jstype/node';
-import { JSType } from '@jstype/core';
+import { serve, serveStatic } from 'jstype-node';
+import { JSType } from 'jstype-core';
 
 const app = new JSType();
 

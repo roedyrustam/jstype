@@ -44,8 +44,8 @@ Framework ini dirancang untuk kompatibilitas universal lintas runtime modern (**
   - `rateLimiter()` (sliding window rate limiting dengan header `RateLimit-*`)
   - `bearerAuth()` & `basicAuth()` (autentikasi API terverifikasi)
   - `cors()` & `logger()`
-- 🖥️ **Official Node.js Adapter (`@jstype/node`)**: Adapter resmi `serve(app, { port })`, `getRequestListener()`, dan `serveStatic()` untuk eksekusi native di Node.js.
-- 📦 **Zero-Overhead Typed RPC Client (`@jstype/client`)**: Proxy-based client tanpa build/codegen step terpisah. Cukup ekspor `type AppType = typeof app`.
+- 🖥️ **Official Node.js Adapter (`jstype-node`)**: Adapter resmi `serve(app, { port })`, `getRequestListener()`, dan `serveStatic()` untuk eksekusi native di Node.js.
+- 📦 **Zero-Overhead Typed RPC Client (`jstype-client`)**: Proxy-based client tanpa build/codegen step terpisah. Cukup ekspor `type AppType = typeof app`.
 - 🛡️ **Zero Heavy Dependencies**: Sangat ringan dan mengandalkan native web primitives.
 
 ---
@@ -55,7 +55,7 @@ Framework ini dirancang untuk kompatibilitas universal lintas runtime modern (**
 ### 1. Definisi Server (`server.ts`)
 
 ```ts
-import { JSType, cors, secureHeaders, etag, logger, validator, describeRoute } from '@jstype/core';
+import { JSType, cors, secureHeaders, etag, logger, validator, describeRoute } from 'jstype-core';
 import { z } from 'zod';
 
 const app = new JSType();
@@ -102,10 +102,10 @@ export type AppType = typeof routes;
 export default app;
 ```
 
-### 2. Menjalankan di Node.js (`@jstype/node`)
+### 2. Menjalankan di Node.js (`jstype-node`)
 
 ```ts
-import { serve } from '@jstype/node';
+import { serve } from 'jstype-node';
 import app from './server.js';
 
 serve(app, { port: 3000 }, (info) => {
@@ -121,7 +121,7 @@ bun run server.ts
 ### 3. Konsumsi di Client Frontend (`client.ts`)
 
 ```ts
-import { createClient } from '@jstype/client';
+import { createClient } from 'jstype-client';
 import type { AppType } from './server.js';
 
 const client = createClient<AppType>('http://localhost:3000');
@@ -253,9 +253,9 @@ export default {
 ```
 jstype/
 ├── packages/
-│   ├── core/           # @jstype/core: Router, Context, Middleware, App Engine, Streaming
-│   ├── client/         # @jstype/client: Proxy-based Typed RPC Client
-│   └── node/           # @jstype/node: Node.js HTTP Server Adapter & Static Files
+│   ├── core/           # jstype-core: Router, Context, Middleware, App Engine, Streaming
+│   ├── client/         # jstype-client: Proxy-based Typed RPC Client
+│   └── node/           # jstype-node: Node.js HTTP Server Adapter & Static Files
 ├── examples/
 │   └── basic-api/      # Real-world Demo: Typed API + Modular Routes + Client
 ├── assets/

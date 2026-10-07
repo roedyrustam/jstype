@@ -1,5 +1,5 @@
 {
-  "name": "@jstype/node",
+  "name": "jstype-node",
   "version": "1.0.0",
   "description": "Node.js HTTP Server Adapter & Static File Middleware for jstype",
   "type": "module",
@@ -50,7 +50,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jstype/core": "workspace:*"
+    "jstype-core": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

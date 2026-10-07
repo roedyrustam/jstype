@@ -9,9 +9,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jstype/client": "workspace:*",
-    "@jstype/core": "workspace:*",
-    "@jstype/node": "workspace:*",
+    "jstype-client": "workspace:*",
+    "jstype-core": "workspace:*",
+    "jstype-node": "workspace:*",
     "zod": "^4.6.5"
   },
   "devDependencies": {
