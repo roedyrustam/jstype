@@ -21,6 +21,29 @@
   "files": [
     "dist"
   ],
+  "license": "MIT",
+  "author": "Roedy Rustam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roedyrustam/jstype.git",
+    "directory": "packages/client"
+  },
+  "bugs": {
+    "url": "https://github.com/roedyrustam/jstype/issues"
+  },
+  "homepage": "https://github.com/roedyrustam/jstype#readme",
+  "keywords": [
+    "jstype",
+    "rpc-client",
+    "typed-client",
+    "proxy",
+    "typescript",
+    "fetch",
+    "zero-codegen"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

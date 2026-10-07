@@ -21,6 +21,28 @@
   "files": [
     "dist"
   ],
+  "license": "MIT",
+  "author": "Roedy Rustam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roedyrustam/jstype.git",
+    "directory": "packages/node"
+  },
+  "bugs": {
+    "url": "https://github.com/roedyrustam/jstype/issues"
+  },
+  "homepage": "https://github.com/roedyrustam/jstype#readme",
+  "keywords": [
+    "jstype",
+    "node",
+    "server-adapter",
+    "http",
+    "static-files",
+    "fetch-adapter"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

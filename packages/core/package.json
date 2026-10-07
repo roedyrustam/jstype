@@ -21,6 +21,33 @@
   "files": [
     "dist"
   ],
+  "license": "MIT",
+  "author": "Roedy Rustam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roedyrustam/jstype.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/roedyrustam/jstype/issues"
+  },
+  "homepage": "https://github.com/roedyrustam/jstype#readme",
+  "keywords": [
+    "jstype",
+    "web-framework",
+    "typescript",
+    "type-safe",
+    "rpc",
+    "fetch-api",
+    "radix-router",
+    "openapi",
+    "scalar",
+    "sse",
+    "streaming"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
