@@ -34,11 +34,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --config.dangerously-allow-all-builds=true
 
-      - name: Typecheck
-        run: pnpm run typecheck
-
       - name: Build packages
         run: pnpm run build
+
+      - name: Typecheck
+        run: pnpm run typecheck
 
       - name: Run unit & integration tests
         run: pnpm run test
